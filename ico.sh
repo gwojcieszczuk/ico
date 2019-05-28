@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# author: Greg Wojcieszczuk (grzegorz.wojcieszczu@dell.com)
+# author: Greg Wojcieszczuk
 # Calculate storage overhead (due to protection level) for given file on Isilon OneFS
 # ico - Isilon Calculate Overhead
 # License: MIT
