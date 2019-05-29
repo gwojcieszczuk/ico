@@ -4,7 +4,12 @@ Simple tool for calculating storage overhead for given file or directory on Dell
 
 ## Installing
 
-Download ico.sh to one of the cluster nodes.
+Download ico.sh to one of the cluster nodes. If Isilon node has internet access you can use curl to download it.
+
+```
+curl -k https://raw.githubusercontent.com/gwojcieszczuk/ico/master/ico.sh > ico.sh
+```
+
 ```
 mkdir /root/bin
 cp ico.sh /root/bin
