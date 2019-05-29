@@ -59,28 +59,32 @@ function calcFileOverhead {
 	tempfile=$(mktemp)
 	isi get -DD $filelocation 2> /dev/null | grep -E '^[[:space:]].*[0-9]{1,},[0-9]{1,},[0-9]{1,}:' \
 		| awk -F: '{print $2}' | awk -F'#' '{print $2}' > $tempfile
-	total=$(awk '{for(i=1;i<=NF;i++)s+=$i}END{print s}' $tempfile)
+	totalBlocks=$(awk '{for(i=1;i<=NF;i++)s+=$i}END{print s}' $tempfile)
 	rm -f $tempfile
+	if [ -z $totalBlocks ]; then
+		echo File not on OneFS!!!
+		exit 4
+	fi
+	isilon_UsesBytes=$[$totalBlocks * 8192]
 
-	totalkb=$[$total * 8192]
-	isilon_Uses=$(($totalkb / 1024 ))
-
-	file_Size=$(( $lsSize / 1024 ))
-	if [ $isilon_Uses -le $file_Size ]; then
-		overhead=0.00
+	file_SizeBytes=$lsSize
+	if (( $(echo "$isilon_UsesBytes <= $file_SizeBytes" | bc -l) )) ; then
+		overhead=0
 	else
-		overhead=$(echo "scale=2; ($isilon_Uses - $file_Size) / $file_Size * 100" | bc)
+		overhead=$(echo "scale=2; ($isilon_UsesBytes - $file_SizeBytes) * 100 / $file_SizeBytes" | bc)
 	fi
 
 	protection_data=$(isi get "$filelocation" | tail +2 | awk '{print $1, $2}')
 	requested_Protection=$(echo $protection_data | awk '{print $1}')
 	actual_Protection=$(echo $protection_data | awk '{print $2}')
 	actual_Protection=$(getProtectionLevelCode $actual_Protection)
-	storage_efficiency=$(echo "scale=2; $file_Size / $isilon_Uses * 100" | bc)
+	storage_efficiency=$(echo "scale=2; $file_SizeBytes / $isilon_UsesBytes * 100" | bc)
 
+	echo
+	echo
 	echo Summary for: $filelocation
-	echo " Isilon Data: $(convertUnits $isilon_Uses)"
-	echo " File Size: $(convertUnits $file_Size)"
+	echo " Isilon Data: $(convertUnits $isilon_UsesBytes)"
+	echo " File Size: $(convertUnits $file_SizeBytes)"
 	echo " Overhead: $overhead %"
 	echo " Efficiency: $storage_efficiency %"
 	echo " Requested Protection: $requested_Protection"
@@ -99,6 +103,11 @@ function calcDirOverhead {
 		echo "Not directory"
 		exit 3
 	fi
+	realdirpath=$(realpath $dirlocation)
+	if ! echo $realdirpath | grep '^/ifs' &> /dev/null; then
+		echo "Directory not on OneFS!!!"
+		exit 4
+	fi
 	# Getting list of files in given directory
 	tempfile=$(mktemp)
 	tempfile2=$(mktemp)
@@ -106,6 +115,7 @@ function calcDirOverhead {
 	echo > $tempfile2
 
 
+	echo "Processing files ..."
 	allFiles=($(find $dirlocation -type f 2> /dev/null))
 	counter=0
 	for File in ${allFiles[@]}
@@ -122,28 +132,31 @@ function calcDirOverhead {
 		fi
 	done
 	# Counting total number of 8k blocks for all files
-	totalblocks=$(awk '{for(i=1;i<=NF;i++)s+=$i}END{print s}' $tempfile)
+	totalBlocks=$(awk '{for(i=1;i<=NF;i++)s+=$i}END{print s}' $tempfile)
 	rm -f $tempfile
-	totalkb=$[$totalblocks * 8192]
-	isilon_Uses=$(($totalkb / 1024 ))
+	if [ -z $totalBlocks ]; then
+		echo "No files found"
+		exit 4
+	fi
+	isilon_UsesBytes=$[$totalBlocks * 8192]
 
 	# Counting total bytes for all files
-	totalbytes=$(awk '{for(i=1;i<=NF;i++)s+=$i}END{print s}' $tempfile2)
+	lsSizeBytesAll=$(awk '{for(i=1;i<=NF;i++)s+=$i}END{print s}' $tempfile2)
 	rm -f $tempfile2
-	
-	total_files_kb=$(( $totalbytes / 1024 ))
-	if [ $isilon_Uses -le $total_files_kb ]; then
-		overhead=0.00
-	else
-		overhead=$(echo "scale=2; ($isilon_Uses - $total_files_kb) / $total_files_kb * 100" | bc)
-	fi
 
-	storage_efficiency=$(echo "scale=2; $total_files_kb / $isilon_Uses * 100" | bc)
+	if (( $(echo "$isilon_UsesBytes <= $lsSizeBytesAll" | bc -l) )) ; then
+                overhead=0
+        else
+                overhead=$(echo "scale=2; ($isilon_UsesBytes - $lsSizeBytesAll) * 100 / $lsSizeBytesAll" | bc)
+        fi
+
+	storage_efficiency=$(echo "scale=2; $lsSizeBytesAll / $isilon_UsesBytes * 100" | bc)
 
 	echo
+	echo
 	echo Summary for: $dirlocation
-	echo " Isilon Data: $(convertUnits $isilon_Uses)"
-	echo " All Files (${#allFiles[@]}) Size: $(convertUnits $total_files_kb)"
+	echo " Isilon Data: $(convertUnits $isilon_UsesBytes)"
+	echo " All Files (${#allFiles[@]}) Size: $(convertUnits $lsSizeBytesAll)"
 	echo " Overhead: $overhead %"
 	echo " Efficiency: $storage_efficiency %"
 
@@ -157,22 +170,37 @@ function convertUnits {
 		echo Invalid value
 		exit 30
 	fi
-	if [[ $_num -lt 1024 ]]; then
-		echo -n $_num KiB
+
+	# Bytes
+	if (( $(echo "$_num < 1024" | bc -l) )); then
+		echo -n $_num Bytes
 		return 0
 	fi
-	if [[ $_num -ge 1024 ]] && [[ $_num -lt $((1024*1024)) ]]; then
+
+	# KiB
+	if (( $(echo "$_num >= 1024" | bc -l) )) && (( $(echo "$_num < $((1024**2))" | bc -l) )); then
 		_v=$(echo "scale=2; $_num / 1024" | bc)
+		echo -n $_v KiB
+		return 0
+	fi
+
+	# MiB
+	if (( $(echo "$_num >= $((1024**2))" | bc -l) )) && (( $(echo "$_num < $((1024**3))" | bc -l) )); then
+		_v=$(echo "scale=2; $_num / 1024 / 1024" | bc)
 		echo -n $_v MiB
 		return 0
 	fi
-	if [[ $_num -ge $((1024*1024)) ]] && [[ $_num -lt $((1024*1024*1024)) ]]; then
-		_v=$(echo "scale=2; $_num / 1024 / 1024" | bc)
+
+	# GiB
+	if (( $(echo "$_num >= $((1024**3))" | bc -l) )) && (( $(echo "$_num < $((1024**4))" | bc -l) )); then
+		_v=$(echo "scale=2; $_num / 1024 / 1024 / 1024" | bc)
 		echo -n $_v GiB
 		return 0
 	fi
-	if [[ $_num -ge $((1024*1024*1024)) ]]; then
-		_v=$(echo "scale=2; $_num / 1024 / 1024 / 1024" | bc)
+
+	# TiB
+	if (( $(echo "$_num >= $((1024**5))" | bc -l) )); then
+		_v=$(echo "scale=2; $_num / 1024 / 1024 / 1024 / 1024" | bc)
 		echo -n $_v TiB
 		return 0
 	fi
@@ -230,6 +258,5 @@ case "$1" in
 	*)
 		showSyntax ;;
 esac
-
 
 
