@@ -42,13 +42,13 @@ Show data for /ifs/data/test.pdf file.
 /root/bin/ico.sh -f /ifs/data/test.pdf
 ```
 ```
-Summary for: /ifs/data/test.pdf
- Isilon Data: 7.50 MiB
- File Size: 2.40 MiB
- Overhead: 212.00 %
- Efficiency: 32.00 %
- Requested Protection: 3x
- Actual Protection: 3x
+Summary for: /ifs/data/test5.dd
+ Isilon Data: 27.00 MiB
+ File Size: 20.00 MiB
+ Overhead: 35.00 %
+ Efficiency: 74.00 %
+ Requested Protection: default
+ Actual Protection: +2d:1n
 ```
 
 Show data for "/ifs/data/software packages" directory; displays progress of the entire operation.
@@ -57,11 +57,13 @@ Show data for "/ifs/data/software packages" directory; displays progress of the 
 /root/bin/ico.sh -d /ifs/data/software\ packages
 ```
 ```
+Processing files ...
 1283/1283
+
 Summary for: /ifs/data/software packages
  Isilon Data: 41.71 GiB
  All Files (1283) Size: 30.48 GiB
- Overhead: 36.00 %
+ Overhead: 36.83 %
  Efficiency: 73.00 %
 ```
 
