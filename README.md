@@ -42,7 +42,7 @@ Show storage overhead and efficiency for given directory (use tab-completion)
 
 ## Sample output
 
-Show data for /ifs/data/test.pdf file.
+Show data for **/ifs/data/test.pdf** file.
 ```
 /root/bin/ico.sh -f /ifs/data/test.pdf
 ```
@@ -58,7 +58,7 @@ Summary for: /ifs/data/test5.dd
  Actual Protection: +2d:1n
 ```
 
-Show data for "/ifs/data/software packages" directory; displays progress of the entire operation.
+Show data for **/ifs/data/software packages** directory; displays progress of the entire operation.
 
 ```
 /root/bin/ico.sh -d /ifs/data/software\ packages
