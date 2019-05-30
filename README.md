@@ -48,9 +48,11 @@ Show data for /ifs/data/test.pdf file.
 ```
 ```
 Summary for: /ifs/data/test5.dd
+ Processing Time: 00h 00min 00sec
+ Today is: 2019-05-30 08:40
  Isilon Data: 27.00 MiB
  File Size: 20.00 MiB
- Overhead: 35.00 %
+ Overhead: 25.00 %
  Efficiency: 74.00 %
  Requested Protection: default
  Actual Protection: +2d:1n
@@ -62,13 +64,14 @@ Show data for "/ifs/data/software packages" directory; displays progress of the 
 /root/bin/ico.sh -d /ifs/data/software\ packages
 ```
 ```
-Processing files ...
+Processing 1283 files (in batches of 1000)... 
 1283/1283
-
 Summary for: /ifs/data/software packages
+ Processing Time: 00h 00min 13sec
+ Today is: 2019-05-30 08:41
  Isilon Data: 41.71 GiB
  All Files (1283) Size: 30.48 GiB
- Overhead: 36.83 %
+ Overhead: 36.00 %
  Efficiency: 73.00 %
 ```
 
