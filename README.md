@@ -42,9 +42,9 @@ Show storage overhead and efficiency for given directory (use tab-completion)
 
 ## Sample output
 
-Show data for **/ifs/data/test.pdf** file.
+Show data for **/ifs/data/test5.dd** file.
 ```
-/root/bin/ico.sh -f /ifs/data/test.pdf
+/root/bin/ico.sh -f /ifs/data/test5.dd
 ```
 ```
 Summary for: /ifs/data/test5.dd
